@@ -80,6 +80,17 @@ export function _linkedListInsertAfter<T>(location: LinkedListEntry<T>, value: T
 	return newEntry;
 }
 
+/** Returns the mean of a list of numbers */
+export function _mean(list: number[]): number {
+	return list.reduce((total, element) => total + element, 0) / list.length;
+}
+
+/** Returns the variance of a list of numbers */
+export function _variance(list: number[]): number {
+	const mean = _mean(list);
+	return list.reduce((total, element) => total + (element - mean) ** 2, 0) / list.length;
+}
+
 // #region Interfaces
 
 /**
