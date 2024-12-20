@@ -91,6 +91,21 @@ export function _variance(list: number[]): number {
 	return list.reduce((total, element) => total + (element - mean) ** 2, 0) / list.length;
 }
 
+/** Given an ordered pair, returns the ordered pairs one unit away in each of the four principal directions */
+export function _getAdjacents(orderedPair: number[]): number[][] {
+	return [
+		[orderedPair[0] - 1, orderedPair[1]],
+		[orderedPair[0] + 1, orderedPair[1]],
+		[orderedPair[0], orderedPair[1] - 1],
+		[orderedPair[0], orderedPair[1] + 1],
+	];
+}
+
+/** Given two ordered pairs, returns the Manhattan distance between them */
+export function _manhattanDistance(pairA: number[], pairB: number[]): number {
+	return Math.abs(pairA[0] - pairB[0]) + Math.abs(pairA[1] - pairB[1]);
+}
+
 // #region Interfaces
 
 /**
