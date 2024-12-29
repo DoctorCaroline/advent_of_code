@@ -17,7 +17,7 @@ export class AdventOfCodeBehavior {
 
 		const input = await inputManager.getInput({ cookie, year, day });
 
-		const solutionPath = `./Solutions/${year}/Day${day}`;
+		const solutionPath = `./Solutions/${year}/Day${day.toString().padStart(2, "0")}`;
 		const solutionPathTs = `${solutionPath}.ts`;
 
 		let solution;
