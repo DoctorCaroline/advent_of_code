@@ -34,21 +34,30 @@ export class AdventOfCodeBehavior {
 		const answers = solution.solution(input);
 		const runtime = Date.now() - startTime;
 		
-		const line = "~~~~~~~~~~~~~~~~~~~~~~~"
-		console.log("");
-		console.log(line);
-		console.log(`~ ADVENT OF CODE ${year} ~`);
-		console.log(line);
-		console.log("");
-		console.log(`Day #${day}`);
-		console.log("");
-		console.log("~ Part 1 ~");
-		console.log(answers[0] + "");
-		console.log("");
-		console.log("~ Part 2 ~");
-		console.log(answers[1] + "");
-		console.log("");
-		console.log(`Runtime: ${runtime} ms`);
+		const divLine = "~~~~~~~~~~~~~~~~~~~~~~~";
+		const output = [
+			"",
+			divLine,
+			`# ADVENT OF CODE ${year} #`,
+			divLine,
+			`   *-~<(Day #${day})>~-*`,
+			"",
+			"~ Part 1 ~",
+			`${answers[0]}`,
+			...(answers[1] !== undefined
+				? [
+					"",
+					"~ Part 2 ~",
+					answers[1] + "",
+				]
+				: []
+			),
+			"",
+			`Runtime: ${runtime} ms`,
+		];
+
+		console.log(output.join("\n"));
+
 		process.exit();
 	}
 
