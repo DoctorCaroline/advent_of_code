@@ -10,7 +10,7 @@ export function getInput(request: InputRequest): Promise<string[]> {
 	__validateRequest(request);
 
 	// Try to retrieve from local cache, if available
-	const path = `./Inputs/${cookie}/${year}/Day${day}.json`;
+	const path = `./Inputs/${cookie}/${year}/Day${day.toString().padStart(2, "0")}.json`;
 	if (fs.existsSync(path)) { return __loadCachedInput(path); }
 	
 	// Else acquire from web and cache for future use.
@@ -47,7 +47,7 @@ function __loadInputFromWeb(request: InputRequest): Promise<string[]> {
 	const { promise, resolve } = utils._makePromise<string[]>();
 	const webRequest: https.RequestOptions = {
 		hostname: "adventofcode.com",
-		path: `/${year}/day/${day}/input`,
+		path: `/${year}/day/${day.toString().padStart(2, "0")}/input`,
 		method: "get",
 		headers: { "Cookie": `session=${cookie}` },
 		timeout: 10000,
@@ -74,7 +74,7 @@ function __cacheInput(cookie: string, year: number, day: number, inputArray: str
 	const path = `./Inputs/${cookie}/${year}`;
 	if (!fs.existsSync(path)) { fs.mkdirSync(path, { recursive: true }); }
 	fs.writeFile(
-		`${path}/Day${day}.json`,
+		`${path}/Day${day.toString().padStart(2, "0")}.json`,
 		JSON.stringify(inputArray),
 		() => resolve(),
 	);
