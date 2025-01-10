@@ -1,0 +1,6 @@
+*.js
+/AdventOfCodeCookie
+/Inputs
+/node_modules
+/package.json
+/package-lock.json
