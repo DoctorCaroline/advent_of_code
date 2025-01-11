@@ -1,10 +1,15 @@
 import * as fs from "node:fs";
+import * as readLine from "node:readline";
 import * as utils from "./AdventOfCodeUtils";
 import * as inputManager from "./AdventOfCodeInputManager";
 
 export class AdventOfCodeBehavior {
 
-	private __cookie: string = "";
+	private __reader?: readLine.Interface;
+
+	public get _reader(): readLine.Interface {
+		return this.__reader ??= this.__initializeReader();
+	}
 
 	public async initialize(year: number, day: number): Promise<void> {
 
@@ -13,9 +18,13 @@ export class AdventOfCodeBehavior {
 			process.exit();
 		}
 
-		const cookie = await this.__loadCookie();
-
-		const input = await inputManager.getInput({ cookie, year, day });
+		let cookie = await this.__loadCookie();
+		let input = await inputManager.getInput({ cookie, year, day });
+		while (input[0].includes("Please log in to get your puzzle input.")) {
+			console.log("Cookie not recognized by the Advent of Code server.");
+			cookie = await this.__promptForCookie();
+			input = await inputManager.getInput({ cookie, year, day });
+		}
 
 		const solutionPath = `./Solutions/${year}/Day${day.toString().padStart(2, "0")}`;
 		const solutionPathTs = `${solutionPath}.ts`;
@@ -66,16 +75,36 @@ export class AdventOfCodeBehavior {
 
 	private async __loadCookie(): Promise<string> {
 		const { promise, resolve } = utils._makePromise<string>();
-		fs.readFile("AdventOfCodeCookie", (err, data) => {
-			let cookie: string;
-			if (err || !data || !(cookie = data.toString()).length) {
-				console.log("Cookie not found! Include cookie hexstring in AdventOfCodeCookie file in this repo's root folder.");
-				process.exit();
+		fs.readFile("AdventOfCodeCookie", async (err, data) => {
+			let cookie: string = data?.toString();
+			if (err || !cookie || cookie.length !== 128) {
+				console.log("Cookie missing or corrupted!");
+				resolve(await this.__promptForCookie());
 			}
 			resolve(cookie);
 		});
-		this.__cookie = await promise;
-		return this.__cookie;
+		return promise;
+	}
+
+	private async __promptForCookie(): Promise<string> {
+		const { promise, resolve } = utils._makePromise<string>();
+		this._reader.question("Enter new cookie: ", (cookie: string) => {
+			if (!cookie.match(/^[a-f0-9]{128}$/)) {
+				console.log("Invalid cookie. Must be a 128-character hexadecimal string.");
+				process.exit();
+			}
+			const writePromise = utils._makePromise<void>();
+			fs.writeFile("AdventOfCodeCookie", cookie, "utf-8", () => writePromise.resolve());
+			writePromise.promise.then(() => resolve(cookie));
+		});
+		return promise;
+	}
+
+	private __initializeReader(): readLine.Interface {
+		return readLine.createInterface({
+			input: process.stdin,
+			output: process.stdout,
+		})
 	}
 
 	private async __copyFile(source: string, target: string): Promise<void> {

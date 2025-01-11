@@ -4,13 +4,13 @@ import * as https from "https";
 import * as utils from "./AdventOfCodeUtils";
 
 export function getInput(request: InputRequest): Promise<string[]> {
-	const { cookie, year, day } = request;
+	const { year, day } = request;
 
 	// Before any further exeuction, make sure this request is a valid one.
 	__validateRequest(request);
 
 	// Try to retrieve from local cache, if available
-	const path = `./Inputs/${cookie}/${year}/Day${day.toString().padStart(2, "0")}.json`;
+	const path = `./Inputs/${year}/Day${day.toString().padStart(2, "0")}.json`;
 	if (fs.existsSync(path)) { return __loadCachedInput(path); }
 	
 	// Else acquire from web and cache for future use.
@@ -47,7 +47,7 @@ function __loadInputFromWeb(request: InputRequest): Promise<string[]> {
 	const { promise, resolve } = utils._makePromise<string[]>();
 	const webRequest: https.RequestOptions = {
 		hostname: "adventofcode.com",
-		path: `/${year}/day/${day.toString().padStart(2, "0")}/input`,
+		path: `/${year}/day/${day}/input`,
 		method: "get",
 		headers: { "Cookie": `session=${cookie}` },
 		timeout: 10000,
@@ -58,20 +58,24 @@ function __loadInputFromWeb(request: InputRequest): Promise<string[]> {
 }
 
 function __parseInputFromWeb(request: InputRequest,	resolve: (input: string[]) => void,	result: IncomingMessage): void {
-	const { cookie, year, day } = request;
+	const { year, day } = request;
 	const lines: string[] = [];
 	result.on('data', (buffer: Buffer) => lines.push(buffer.toString()));
 	result.on('end', async () => {
 		const inputArray = lines.join("").split("\n");
+		if (inputArray[0].includes("Please log in to get your puzzle input.")) {
+			resolve(inputArray);
+			return;
+		}
 		if (!inputArray[inputArray.length - 1]) { inputArray.pop(); }
-		await __cacheInput(cookie, year, day, inputArray);
+		await __cacheInput(year, day, inputArray);
 		resolve(inputArray);
 	});
 }
 
-function __cacheInput(cookie: string, year: number, day: number, inputArray: string[]): Promise<void> {
+function __cacheInput(year: number, day: number, inputArray: string[]): Promise<void> {
 	const { promise, resolve } = utils._makePromise<void>();
-	const path = `./Inputs/${cookie}/${year}`;
+	const path = `./Inputs/${year}`;
 	if (!fs.existsSync(path)) { fs.mkdirSync(path, { recursive: true }); }
 	fs.writeFile(
 		`${path}/Day${day.toString().padStart(2, "0")}.json`,
