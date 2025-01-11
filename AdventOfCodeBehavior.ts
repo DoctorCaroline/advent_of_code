@@ -19,11 +19,14 @@ export class AdventOfCodeBehavior {
 
 		const solutionPath = `./Solutions/${year}/Day${day.toString().padStart(2, "0")}`;
 		const solutionPathTs = `${solutionPath}.ts`;
+		const solutionPathJs = `${solutionPath}.js`;
 
 		let solution;
 		try { solution = require(solutionPath);	}
 		catch {
+			await this.__copyFile("./Solutions/Template/SolutionTemplate.js", solutionPathJs);
 			await this.__copyFile("./Solutions/Template/SolutionTemplate.ts", solutionPathTs);
+			await this.__replaceInFile(solutionPathTs, "Day X", `Day ${day}`);
 			await this.__openFile(solutionPathTs);
 
 			console.log(`No solution found at ${solutionPath}. Solution file created.`);
@@ -85,6 +88,15 @@ export class AdventOfCodeBehavior {
 		const { promise, resolve } = utils._makePromise<void>();
 		const { exec } = require("child_process");
 		exec(`start ${target}`, () => resolve());
+		return promise;
+	}
+
+	private async __replaceInFile(path: string, target: string | RegExp, replacement: string): Promise<void> {
+		const { promise, resolve } = utils._makePromise<void>();
+		fs.readFile(path, "utf-8", (_err, data) => {
+			const newData = data.replace(target, replacement);
+			fs.writeFile(path, newData, "utf-8", () => resolve());
+		});
 		return promise;
 	}
 }
