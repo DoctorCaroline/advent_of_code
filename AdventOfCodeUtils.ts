@@ -91,14 +91,26 @@ export function _variance(list: number[]): number {
 	return list.reduce((total, element) => total + (element - mean) ** 2, 0) / list.length;
 }
 
-/** Given an ordered pair, returns the ordered pairs one unit away in each of the four principal directions */
-export function _getAdjacents(orderedPair: number[]): number[][] {
-	return [
-		[orderedPair[0] - 1, orderedPair[1]],
-		[orderedPair[0] + 1, orderedPair[1]],
-		[orderedPair[0], orderedPair[1] - 1],
-		[orderedPair[0], orderedPair[1] + 1],
-	];
+/** Given an ordered set of integer coordinates of arbitrary dimension, returns all adjacent integer coordinates */
+export function _getAdjacents(coords: number[], includeDiagonals: boolean = false): number[][] {
+	
+	const diffs = [-1, 0, 1];
+	const moves: number[][] = [[]];
+	while (moves[0].length < coords.length) {
+		const move = moves.shift()!;
+		for (const diff of diffs) {
+			moves.push([...move, diff]);
+		}
+	}
+
+	const adjacents: number[][] = [];
+	for (const move of moves) {
+		if (!move.some(Boolean)) { continue; } // All zeros (not a move)
+		if (move.filter(Boolean).length > 1 && !includeDiagonals) { continue; }
+		adjacents.push(move.map((value, axis) => value + coords[axis]));
+	}
+
+	return adjacents;
 }
 
 /** Given two ordered pairs, returns the Manhattan distance between them */
