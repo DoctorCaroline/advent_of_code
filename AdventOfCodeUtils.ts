@@ -141,6 +141,11 @@ export function mod(divisor: number, dividend: number): number {
 
 // #region Interfaces
 
+/** Numerically indexed queue of states in a pathfinding algorithm that have yet to be evaluated */
+export interface IDijkstraQueue {
+	[cost: number]: string[];
+}
+
 /**
  * Simple JS object containing a promise/resolver pair
  * to facilitate asynchronous execution.
