@@ -3,14 +3,14 @@ import * as utils from "../../AdventOfCodeUtils";
 /** Day 11 Solution */
 export function solution(rawFloors: string[]): utils.Solution {
 	const solution = [__solutionInner(rawFloors)];
-	//rawFloors[0] += " elerium generator " + " elerium-compatible microchip " + " dilithium generator " + " dilithium-compatible microchip ";
-	//solution.push(__solutionInner(rawFloors));
+	rawFloors[0] += " elerium generator " + " elerium-compatible microchip " + " dilithium generator " + " dilithium-compatible microchip ";
+	solution.push(__solutionInner(rawFloors));
 	return solution;
 }
 
 function __solutionInner(rawFloors: string[]): number {
 
-	const startState: IState = { devices: [], elevator: 0 };
+	const startState: IState = { devices: [], elevator: 0, abstract: 0 };
 
 	for (const floorNumber in rawFloors) {
 		const rawFloor = rawFloors[floorNumber];
@@ -30,12 +30,13 @@ function __solutionInner(rawFloors: string[]): number {
 	startState.devices.sort((devA: IDevice, devB: IDevice) =>
 		devA.element.localeCompare(devB.element) || devA.type.localeCompare(devB.type)
 	);
+	__updateAbstract(startState);
 
 	const strStartState = JSON.stringify(startState);
 
 	let cost = 0;
 	const toEvaluate: utils.IDijkstraQueue = { 0: [strStartState] };
-	const evaluated: utils.StringKeyedObject<true> = {};
+	const evaluated: utils.NumberKeyedObject<true> = {};
 
 	while (true) {
 		while (!toEvaluate[cost]) { cost++; }
@@ -46,24 +47,33 @@ function __solutionInner(rawFloors: string[]): number {
 			continue;
 		}
 
-		if (evaluated[rawState]) { continue; }
-		evaluated[rawState] = true;
-
 		const state: IState = JSON.parse(rawState);
-		if (__isFinished(state)) { return cost; }
 
-		for (const nextState of __getValidNextStates(state)) {
-			if (evaluated[nextState]) { continue; }
-			(toEvaluate[cost + 1] ||= []).push(nextState);
+		if (evaluated[state.abstract]) { continue; }
+		evaluated[state.abstract] = true;
+
+		if (state.devices.every(device => device.floor === 3)) { return cost; }
+
+		const nextStates = __getValidNextStates(state);
+		for (const abstract in nextStates) {
+			if (evaluated[abstract]) { continue; }
+			const state = nextStates[abstract as `${number}`];
+			(toEvaluate[cost + 1] ||= []).push(state);
 		}
 	}
 }
 
+function __updateAbstract(state: IState): void {
+	const strFloors = state.devices.map(device => device.floor).join("");
+	const sortedPairs = [...strFloors.matchAll(/\d\d/g)].map(pair => pair[0]).sort();
+	state.abstract = +(sortedPairs.join("") + +state.elevator);
+}
+
 function __isSafe(state: IState): boolean {
-	for (const chip of state.devices.filter(__isChip)) {
+	for (const chip of state.devices.filter(device => device.type === "MC")) {
 		let isExposed = false;
 		let isSafe = false;
-		for (const rtg of state.devices.filter(__isRTG)) {
+		for (const rtg of state.devices.filter(device => device.type === "RTG")) {
 			if (chip.floor !== rtg.floor) { continue; }
 			if (chip.element === rtg.element) {
 				isSafe = true;
@@ -76,35 +86,19 @@ function __isSafe(state: IState): boolean {
 	return true;
 }
 
-function __isChip(device: IDevice): boolean {
-	return device.type === "MC";
-}
-
-function __isRTG(device: IDevice): boolean {
-	return device.type === "RTG";
-}
-
-function __isFinished(state: IState): boolean {
-	return state.devices.every(device => device.floor === 3);
-}
-
-function __isValidFloor(floor: number): boolean {
-	return floor >= 0 && floor <= 3;
-}
-
-function __getValidNextStates(state: IState): string[] {
-	const validNextStates: string[] = [];
+function __getValidNextStates(state: IState): utils.NumberKeyedObject<string> {
+	const validNextStates: utils.NumberKeyedObject<string> = {};
 	const { elevator, devices } = state;
 
 	for (const dev1 in devices) {
 		const device1 = devices[dev1];
-		__tryMakeNextState(validNextStates, state, elevator, elevator - 1, device1);
-		__tryMakeNextState(validNextStates, state, elevator, elevator + 1, device1);
+		__tryMakeNextState(validNextStates, state, elevator - 1, device1);
+		__tryMakeNextState(validNextStates, state, elevator + 1, device1);
 		for (const dev2 in devices) {
 			if (dev1 === dev2) { break; }
 			const device2 = devices[dev2];
-			__tryMakeNextState(validNextStates, state, elevator, elevator - 1, device1, device2);
-			__tryMakeNextState(validNextStates, state, elevator, elevator + 1, device1, device2);
+			__tryMakeNextState(validNextStates, state, elevator - 1, device1, device2);
+			__tryMakeNextState(validNextStates, state, elevator + 1, device1, device2);
 		}
 	}
 
@@ -112,16 +106,17 @@ function __getValidNextStates(state: IState): string[] {
 }
 
 function __tryMakeNextState(
-	validNextStates: string[],
+	validNextStates: utils.NumberKeyedObject<string>,
 	state: IState,
-	currentFloor: number,
 	targetFloor: number,
 	device1: IDevice,
 	device2?: IDevice
 ): void {
-	if (!__isValidFloor(targetFloor)) { return; }
-	if (device1.floor !== currentFloor) { return; }
-	if (device2 && device2.floor !== currentFloor) { return; }
+	const { elevator, abstract } = state;
+	
+	if (targetFloor < 0 || targetFloor > 3) { return; }
+	if (device1.floor !== elevator) { return; }
+	if (device2 && device2.floor !== elevator) { return; }
 	if (device2 && device1.type !== device2.type && device1.element !== device2.element) { return; }
 
 	device1.floor = targetFloor;
@@ -129,21 +124,19 @@ function __tryMakeNextState(
 	state.elevator = targetFloor;
 	
 	if (__isSafe(state)) {
-		validNextStates.push(JSON.stringify(state));
+		__updateAbstract(state);
+		validNextStates[state.abstract] = JSON.stringify(state);
 	}
 
-	device1.floor = currentFloor;
-	device2 && (device2.floor = currentFloor);
-	state.elevator = currentFloor;
-}
-
-enum DeviceType {
-	RTG,
-	MC,
+	device1.floor = elevator;
+	device2 && (device2.floor = elevator);
+	state.elevator = elevator;
+	state.abstract = abstract;
 }
 
 interface IState {
-	devices: IDevice[],
+	abstract: number;
+	devices: IDevice[];
 	elevator: number;
 }
 
@@ -151,4 +144,9 @@ interface IDevice {
 	element: string;
 	type: keyof typeof DeviceType;
 	floor: number;	
+}
+
+enum DeviceType {
+	RTG,
+	MC,
 }
