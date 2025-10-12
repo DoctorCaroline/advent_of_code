@@ -169,6 +169,9 @@ export interface LinkedListEntry<T> {
 /** Simple string-keyed object whose values are all of type T */
 export type StringKeyedObject<T> = { [key: string]: T }
 
+/** Simple string-keyed object whose values are all of type T */
+export type NumberKeyedObject<T> = { [key: number]: T }
+
 /** Standard return type of AOC solutions, any array of string-able primitives */
 export type Solution = { toString: VoidFunction }[];
 
