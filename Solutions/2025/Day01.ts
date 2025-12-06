@@ -21,7 +21,7 @@ export function solution(rawTurns: string[]): utils.Solution {
 		out[1] += +(!alreadyZero && (dial > 99 || dial <= 0));
 
 		// Renormalize dial to 0-99 value and see whether we ended on zero
-		dial = utils.mod(dial, 100);
+		dial = utils._mod(dial, 100);
 		out[0] += +!dial;
 	}
 

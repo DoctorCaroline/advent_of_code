@@ -120,11 +120,11 @@ export function _manhattanDistance(pairA: number[], pairB: number[]): number {
 
 /** Given a pair of numbers, returns their least common multiple */
 export function _lcm(a: number, b: number): number {
-	return a * b / gcd(a, b);
+	return a * b / _gcd(a, b);
 }
 
 /** Simple Euclidean algorithm implementation that returns the greatest common denominator for a list of numbers */
-export function gcd(a: number, b: number): number {
+export function _gcd(a: number, b: number): number {
 	let temp;
 	while (b !== 0) {
 		temp = b;
@@ -135,7 +135,7 @@ export function gcd(a: number, b: number): number {
 };
 
 /** Given a divisor and dividend, returns the *positive* remainder of their division */
-export function mod(divisor: number, dividend: number): number {
+export function _mod(divisor: number, dividend: number): number {
 	return (divisor % dividend + dividend) % dividend;
 }
 
