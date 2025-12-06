@@ -139,6 +139,16 @@ export function mod(divisor: number, dividend: number): number {
 	return (divisor % dividend + dividend) % dividend;
 }
 
+/** Adds all the values in the given array */
+export function _sum(arr: number[]): number {
+	return arr.reduce((prev, curr) => prev + curr, 0);
+}
+
+/** Multiplies all the values in the given array */
+export function _product(arr: number[]): number {
+	return arr.reduce((prev, curr) => prev * curr, 1);
+}
+
 // #region Interfaces
 
 /** Numerically indexed queue of states in a pathfinding algorithm that have yet to be evaluated */
