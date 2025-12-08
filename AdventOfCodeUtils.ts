@@ -149,6 +149,20 @@ export function _product(arr: number[]): number {
 	return arr.reduce((prev, curr) => prev * curr, 1);
 }
 
+/** Returns straight-line distance between two n-dimensional coordinates */
+export function _euclideanDistance(coord1: number[], coord2: number[]): number {
+	return Math.sqrt(_squareEuclideanDistance(coord1, coord2));
+}
+
+/**
+ * Returns the square of the Euclidean distance between two n-dimensional coordinates
+ * Safer and faster than true Euclidean distance when indexing and ranking large numbers of distances
+ */
+export function _squareEuclideanDistance(coord1: number[], coord2: number[]): number {
+	if (coord1.length !== coord2.length) { throw new Error("Dimension mismatch."); }
+	return coord1.reduce((sum, value, index) => sum + (value - coord2[index]) ** 2, 0);
+}
+
 // #region Interfaces
 
 /** Numerically indexed queue of states in a pathfinding algorithm that have yet to be evaluated */
