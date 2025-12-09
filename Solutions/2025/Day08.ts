@@ -5,32 +5,29 @@ export function solution(rawInput: string[]): utils.Solution {
 
 	const boxes: number[][] = rawInput.map(rawBox => rawBox.split(",").map(coord => +coord));
 	const circuits: Set<string>[] = [];
-	const pairwiseDistances: Map<number, string> = new Map();
+	const connections: utils.Heap<[string, number]> = new utils.Heap((a, b) => a[1] - b[1]);
 	
 	// Iterate pairwise over boxes and index each pair by distance
-	for (let first = 0; first < boxes.length - 1; first++){
+	for (let first = 0; first < boxes.length - 1; first++) {
 		for (let second = first + 1; second < boxes.length; second++) {
 			const box1 = boxes[first];
 			const box2 = boxes[second];
 			const distance = utils._squareEuclideanDistance(box1, box2);
 			const pair = `${box1.join(",")};${box2.join(",")}`;
-			pairwiseDistances.set(distance, pair);
+			connections.add([pair, distance]);
 		}
 	}
 	
 	const out = [0, 0];
 	
-	let connections = 0;
 	// For each pair, starting with the shortest distance, add to circuits
-	const sortedDistances = [...pairwiseDistances.keys()].sort((a, b) => a - b);
-	for (const distance of sortedDistances) {
+	let count = 0;
+	for (const connection of connections.drain()) {
 
 		// After 1000 connections, calculate biggest three
-		if (connections === 1000) { out[0] = __calculateBiggestThree(circuits); }
-		
-		const pair = pairwiseDistances.get(distance)!;
-		connections++;
-		const [box1, box2] = pair.split(";");
+		if (count++ === 1000) { out[0] = __calculateBiggestThree(circuits); }
+
+		const [box1, box2] = connection[0].split(";");
 		
 		// Identify existing circuits (maximum 2)
 		const found: number[] = [];
@@ -62,7 +59,7 @@ export function solution(rawInput: string[]): utils.Solution {
 		}
 	}
 
-	throw new Error("This statement should be unreachable. The pairwise distance loop shouldn't end without finding an answer.");
+	throw new Error("This statement should be unreachable. Should have an answer before the heap is consumed.");
 }
 
 function __calculateBiggestThree(circuits: Set<string>[]): number {
