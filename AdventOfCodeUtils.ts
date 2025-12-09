@@ -6,6 +6,128 @@
  * Advent of Code puzzles
  */
 
+// #region Classes
+
+/** Efficient array structure for managing priority queues */
+export class Heap<T> {
+	private __heap: T[] = [];
+	private __compare: (left: T, right: T) => number = () => 0;
+
+	/** Constructs a new heap from a compare function or a new copy from an existing heap */
+	constructor(compareOrHeap: Heap<T> | CompareFunction<T>) {
+		if (this.__isHeap(compareOrHeap)) {
+			this.__copyFrom(compareOrHeap);
+		}
+		else {
+			this.__compare = compareOrHeap;
+		}
+	}
+
+	/**
+	 * Iterator signature to allow for native handling of "for-of" syntax
+	 * This default iterator iterates over a deep copy to prevent exhaustion of internal array
+	 */
+	public *[Symbol.iterator](): Iterator<T> {
+		const copy = this.copy();
+		while (copy.length) {
+			yield copy.pop()!;
+		}
+	}
+
+	/**
+	 * Additional iterator signature to allow for use with "for-of" syntax
+	 * This iterator operates on this heap's own internal array
+	 */
+	public *drain(): IterableIterator<T> {
+		while (this.length) {
+			yield this.pop()!;
+		}
+	}
+
+	/** Gives the current number of elements in the heap */
+	public get length(): number {
+		return this.__heap.length;
+	}
+
+	/** Creates and returns a deep copy of this heap */
+	public copy(): Heap<T> {
+		return new Heap<T>(this);
+	}
+
+	/**
+	 * Adds a new element to the heap
+	 * Returns the heap so it can be chained
+	 */
+	public add(node: T): Heap<T> {
+		this.__heap.push(node);
+		this.__upheap(this.length - 1);
+		return this;
+	}
+
+	/** Dequeues and returns the next element from the heap */
+	public pop(): T | null {
+		if (!this.length) { return null; }
+		this.__swap(0, this.length - 1);
+		const value = this.__heap.pop()!;
+		this.__downheap();
+		return value;
+	}
+
+	/** Returns the next element from the heap without removing it */
+	public look(): T | null {
+		return this.length ? this.__heap[0] : null;
+	}
+
+	/** Adjusts the heap from a child up to preserve the heap property */
+	private __upheap(index: number): void {
+		if (!index) { return; }
+		const currentParent = Math.floor((index - 1) / 2);
+		const newParent = this.__getRightfulParent(currentParent);
+		if (newParent === currentParent) { return; }
+		this.__swap(newParent, currentParent);
+		this.__upheap(currentParent);
+	}
+
+	/** Adjusts the heap from a parent down to preserve the heap property */
+	private __downheap(currentParent: number = 0): void {
+		const newParent = this.__getRightfulParent(currentParent);
+		if (newParent === currentParent) { return; }
+		this.__swap(newParent, currentParent);
+		this.__downheap(newParent);
+	}
+
+	/** Given a parent index, returns which element from among itself and its two children should be the new parent in a reheap operation */
+	private __getRightfulParent(index: number): number {
+		let parent = index;
+		for (const child of [2 * index + 1, 2 * index + 2]) {
+			if (child < this.length && this.__compare(this.__heap[parent], this.__heap[child]) > 0) {
+				parent = child;
+			}
+		}
+		return parent;
+	}
+
+	/** Switches the places of two elements in the heap given their indices */
+	private __swap(indexA: number, indexB: number): void {
+		[this.__heap[indexA], this.__heap[indexB]] = [this.__heap[indexB], this.__heap[indexA]];
+	}
+
+	/** Copies state from the given heap, overwriting any local state */
+	private __copyFrom(heap: Heap<T>): void {
+		this.__heap = [...heap.__heap];
+		this.__compare = heap.__compare;
+	}
+
+	/** Checker function for constructor overloading */
+	private __isHeap(heapOrCompare: Heap<T> | CompareFunction<T>): heapOrCompare is Heap<T> {
+		return heapOrCompare.hasOwnProperty("__heap");
+	}
+}
+
+// #endregion Classes
+
+// #region Functions
+
 /** Generates a PromiseResolvePair<T> for the specified type T */
 export function _makePromise<T>(): PromiseResolvePair<T> {
 	let resolve: (value: T) => void = () => {};
@@ -163,6 +285,8 @@ export function _squareEuclideanDistance(coord1: number[], coord2: number[]): nu
 	return coord1.reduce((sum, value, index) => sum + (value - coord2[index]) ** 2, 0);
 }
 
+// #endregion Functions
+
 // #region Interfaces
 
 /** Numerically indexed queue of states in a pathfinding algorithm that have yet to be evaluated */
@@ -198,5 +322,8 @@ export type NumberKeyedObject<T> = { [key: number]: T }
 
 /** Standard return type of AOC solutions, any array of string-able primitives */
 export type Solution = { toString: VoidFunction }[];
+
+/** Comparer function for array.sort() and heap implementations */
+export type CompareFunction<T> = (left: T, right: T) => number;
 
 // #endregion Types
