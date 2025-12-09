@@ -11,7 +11,7 @@ export class AdventOfCodeBehavior {
 		return this.__reader ??= this.__initializeReader();
 	}
 
-	public async initialize(year: number, day: number): Promise<void> {
+	public async initialize(year: number, day: number, benchmark: boolean): Promise<void> {
 
 		if (!year || !day) {
 			console.log("Input error: Must provide a year and a day.");
@@ -31,7 +31,7 @@ export class AdventOfCodeBehavior {
 		const solutionPathJs = `${solutionPath}.js`;
 
 		let solution;
-		try { solution = require(solutionPath);	}
+		try { solution = require(solutionPath) as Solution;	}
 		catch {
 			await this.__copyFile("./Solutions/Template/SolutionTemplate.js", solutionPathJs);
 			await this.__copyFile("./Solutions/Template/SolutionTemplate.ts", solutionPathTs);
@@ -42,31 +42,9 @@ export class AdventOfCodeBehavior {
 			process.exit();
 		}
 
-		const startTime = Date.now();
-		const answers = solution.solution(input);
-		const runtime = Date.now() - startTime;
-		
-		const divLine = "~~~~~~~~~~~~~~~~~~~~~~~";
-		const output = [
-			"",
-			divLine,
-			`# ADVENT OF CODE ${year} #`,
-			divLine,
-			`   *-~<(Day #${day})>~-*`,
-			"",
-			"~ Part 1 ~",
-			`${answers[0]}`,
-			...(answers[1] !== undefined
-				? [
-					"",
-					"~ Part 2 ~",
-					answers[1] + "",
-				]
-				: []
-			),
-			"",
-			`Runtime: ${runtime} ms`,
-		];
+		const output = benchmark
+			? this.__benchmark({ input, solution, runtime: 10 })
+			: this.__runAndDisplay({ year, day, input, solution });
 
 		console.log(output.join("\n"));
 
@@ -128,4 +106,81 @@ export class AdventOfCodeBehavior {
 		});
 		return promise;
 	}
+
+	private __runAndDisplay(args: DisplaySolutionArgs): string[] {
+		const { year, day, input, solution } = args;
+
+		const startTime = Date.now();
+		const answers = solution.solution(input);
+		const runtime = Date.now() - startTime;
+		
+		const divLine = "~~~~~~~~~~~~~~~~~~~~~~~";
+		return [
+			"",
+			divLine,
+			`# ADVENT OF CODE ${year} #`,
+			divLine,
+			`   *-~<(Day #${day})>~-*`,
+			"",
+			"~ Part 1 ~",
+			`${answers[0]}`,
+			...(answers[1] !== undefined
+				? [
+					"",
+					"~ Part 2 ~",
+					answers[1] + "",
+				]
+				: []
+			),
+			"",
+			`Runtime: ${runtime} ms`,
+		];
+	}
+
+	private __benchmark(args: BenchmarkArgs): string[] {
+		const { input, solution, runtime } = args;
+		const runtimes: number[] = [];
+		let answers: utils.Solution = [];
+		let totalRuntime = 0;
+		while (totalRuntime < 1000 * runtime) {
+			const start = Date.now();
+			answers = solution.solution(input);
+			const end = Date.now();
+			runtimes.push(end - start);
+			totalRuntime += (end - start);
+		}
+		const divLine = "~~~~~~~~~~~~~~~~~~~~~";
+		return [
+			divLine,
+			"# Benchmarking Mode #",
+			divLine,
+			`Total runtime: ${totalRuntime / 1000} s`,
+			`Solves: ${runtimes.length}`,
+			divLine,
+			`Average runtime per solve: ${Math.round(totalRuntime / runtimes.length)} ms`,
+			`Standard deviation: ${Math.round(Math.sqrt(utils._variance(runtimes)))} ms`,
+			divLine,
+			`Part 1: ${answers[0]}`,
+			...(answers[1] !== undefined ? [`Part 2: ${answers[1]}`] : []),
+			divLine,
+		];
+	}
+}
+
+interface Solution {
+	solution: (input: string[]) => utils.Solution;
+}
+
+interface RunSolutionArgs {
+	input: string[];
+	solution: Solution;
+}
+
+interface DisplaySolutionArgs extends RunSolutionArgs {
+	year: number;
+	day: number;
+}
+
+interface BenchmarkArgs extends RunSolutionArgs {
+	runtime: number;
 }
