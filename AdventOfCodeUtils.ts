@@ -242,12 +242,14 @@ export function _manhattanDistance(pairA: number[], pairB: number[]): number {
 
 /** Given a pair of numbers, returns their least common multiple */
 export function _lcm(a: number, b: number): number {
-	return a * b / _gcd(a, b);
+	return Math.abs(a * b) / _gcd(a, b);
 }
 
 /** Simple Euclidean algorithm implementation that returns the greatest common denominator for a list of numbers */
 export function _gcd(a: number, b: number): number {
 	let temp;
+	a = Math.abs(a);
+	b = Math.abs(b);
 	while (b !== 0) {
 		temp = b;
 		b = a % b;
@@ -283,6 +285,55 @@ export function _euclideanDistance(coord1: number[], coord2: number[]): number {
 export function _squareEuclideanDistance(coord1: number[], coord2: number[]): number {
 	if (coord1.length !== coord2.length) { throw new Error("Dimension mismatch."); }
 	return coord1.reduce((sum, value, index) => sum + (value - coord2[index]) ** 2, 0);
+}
+
+/** Converts a matrix into row echelon form */
+export function _refMatrix(matrix: number[][], preserveInts: boolean = false): void {
+	const rowCount = matrix.length;
+	const colCount = matrix[0].length;
+	let pivotRow = 0;
+	let pivotCol = 0;
+
+	while (pivotCol < colCount && pivotRow < rowCount) {
+		// Locate a row with an element to pivot
+		let targetRow = pivotRow;
+		while (targetRow < rowCount && matrix[targetRow][pivotCol] === 0) { targetRow++; }
+		if (targetRow === rowCount) {
+			pivotCol++;
+			continue;
+		}
+
+		// Swap rows, if necessary
+		if (targetRow !== pivotRow) {
+			[matrix[targetRow], matrix[pivotRow]] = [matrix[pivotRow], matrix[targetRow]]
+		}
+
+		// Clear out column beneath the pivot
+		for (let row = pivotRow + 1; row < rowCount; row++) {
+			const pivotCell = matrix[pivotRow][pivotCol];
+			const targetCell = matrix[row][pivotCol];
+			if (targetCell === 0) { continue; }
+
+			// If preserving integer values, scale up accordingly
+			const multiple = preserveInts
+				? _lcm(pivotCell, targetCell)
+				: Math.abs(pivotCell);
+
+			const pivotScale = multiple / Math.abs(pivotCell);
+			const rowScale = multiple / Math.abs(targetCell);
+
+			// Multiply rows (respecting sign)
+			const pivotMultiplier = pivotScale * Math.sign(pivotCell);
+			const rowMultiplier = rowScale * Math.sign(targetCell);
+
+			for (let col = pivotCol; col < colCount; col++) {
+				matrix[row][col] = matrix[row][col] * rowMultiplier - matrix[pivotRow][col] * pivotMultiplier;
+			}
+		}
+
+		pivotRow++;
+		pivotCol++;
+	}
 }
 
 // #endregion Functions
