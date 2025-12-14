@@ -287,6 +287,13 @@ export function _squareEuclideanDistance(coord1: number[], coord2: number[]): nu
 	return coord1.reduce((sum, value, index) => sum + (value - coord2[index]) ** 2, 0);
 }
 
+/** Given an integer and the expected number of bits, returns the integer corresponding to the reverse of its bitwise representation */
+export function _invertInt(num: number, bits: number) {
+	return Number.parseInt(num.toString(2).padStart(bits, "0").split("").reverse().join(""), 2);
+};
+
+// #region Matrix operations
+
 /** Converts a matrix into row echelon form */
 export function _refMatrix(matrix: number[][], preserveInts: boolean = false): void {
 	const rowCount = matrix.length;
@@ -335,6 +342,30 @@ export function _refMatrix(matrix: number[][], preserveInts: boolean = false): v
 		pivotCol++;
 	}
 }
+
+/** Flips a matrix about its diagonal axis */
+export function _transpose<T>(array: T[][]): T[][] {
+	if (array.length === 0) { return []; }
+	const transposed: T[][] = array[0].map(_ => []);
+	for (let row = 0; row < array.length; row++) {
+		for (let col = 0; col < array[0].length; col++) {
+			transposed[col].push(array[row][col]);
+		}
+	}
+	return transposed;
+}
+
+/** Returns a matrix with the rows in reverse order */
+export function _flipRows<T>(array: T[][]): T[][] {
+	return [...array.map(row => [...row])].reverse();
+}
+
+/** Returns a matrix with the columns in reverse order */
+export function _flipCols<T>(array: T[][]): T[][] {
+	return array.map(row => [...row].reverse());
+}
+
+// #endregion Matrix operations
 
 // #endregion Functions
 
