@@ -180,7 +180,7 @@ export function _makeLinkedList<T>(arr: T[]): LinkedListEntry<T> | null {
 /** Inserts a new value prior to the specified element of a linked list */
 export function _linkedListInsertBefore<T>(location: LinkedListEntry<T>, value: T): LinkedListEntry<T> {
 	const insertAfter = location.prev;
-	if (insertAfter) { _linkedListInsertAfter(insertAfter, value); }
+	if (insertAfter) { return _linkedListInsertAfter(insertAfter, value); }
 	const newEntry: LinkedListEntry<T> = {
 		value,
 		prev: null,
