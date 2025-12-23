@@ -287,6 +287,16 @@ export function _squareEuclideanDistance(coord1: number[], coord2: number[]): nu
 	return coord1.reduce((sum, value, index) => sum + (value - coord2[index]) ** 2, 0);
 }
 
+/** Returns the 1-norm of a vector */
+export function _oneNorm(vector: number[]): number {
+	return vector.reduce((sum, n) => sum + Math.abs(n), 0);
+}
+
+/** Returns whether a given test value falls between two bounds (inclusive) */
+export function _inRange(testValue: number, boundA: number, boundB: number): boolean {
+	return (testValue - boundA) * (testValue - boundB) <= 0
+}
+
 /** Given an integer and the expected number of bits, returns the integer corresponding to the reverse of its bitwise representation */
 export function _invertInt(num: number, bits: number) {
 	return Number.parseInt(num.toString(2).padStart(bits, "0").split("").reverse().join(""), 2);
