@@ -403,7 +403,7 @@ export type StringKeyedObject<T> = { [key: string]: T }
 export type NumberKeyedObject<T> = { [key: number]: T }
 
 /** Standard return type of AOC solutions, any array of string-able primitives */
-export type Solution = { toString: VoidFunction }[];
+export type Solution = { toString: () => void }[];
 
 /** Comparer function for array.sort() and heap implementations */
 export type CompareFunction<T> = (left: T, right: T) => number;
