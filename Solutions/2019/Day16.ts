@@ -2,13 +2,23 @@ import * as utils from "../../AdventOfCodeUtils";
 
 /** Day 16 Solution */
 export function solution(rawInput: string[]): utils.Solution {
-
 	let sequence = rawInput[0].split("").map(n => +n);
 
-	for (let _ = 0; _ < 100; _++) { sequence = __fftPass(sequence); }
+	const bigSequence = [];
+	const offset = +sequence.slice(0, 7).join("");
+	for (let index = offset; index < sequence.length * 10000; index++) {
+		bigSequence.push(sequence[index % sequence.length]);
+	}
 
-	const out = [sequence.slice(0, 8).join("")];
-	return out;
+	for (let _ = 0; _ < 100; _++) {
+		sequence = __fftPass(sequence);
+		__partialSumPass(bigSequence);
+	}
+
+	return [
+		sequence.slice(0, 8).join(""),
+		bigSequence.slice(0, 8).join("")
+	];
 }
 
 function __amplitude(wavelength: number, position: number): number {
@@ -21,4 +31,10 @@ function __fftPass(sequence: number[]): number[] {
 		out.push(sequence.reduce((sum, value, index) => sum + (value * __amplitude(+place, index)), 0) % 10);
 	}
 	return out.map(value => value * Math.sign(value));
+}
+
+function __partialSumPass(sequence: number[]): void {
+	for (let i = sequence.length - 2; i >= 0; i--) {
+		sequence[i] = (sequence[i] + sequence[i + 1]) % 10;
+	}
 }
