@@ -6,11 +6,9 @@ export function solution(rawInput: string[]): utils.Solution {
 	const program = rawInput[0].split(",").map(n => +n);
 	program[0] = 2;
 	const intcoder = new IntcodeRuntime();
-	const input: number[] = [];
-	const codeState: Partial<IntcodeMachineState> = { input, continuousInput: true };
+	const codeState: Partial<IntcodeMachineState> = { continuousInput: true };
 
-	intcoder.run(program, undefined, codeState);
-	const output = codeState.output!;
+	const output = intcoder.run(program, undefined, codeState);
 
 	const gameState: GameState = {
 		blocks: new Set(),
@@ -24,7 +22,7 @@ export function solution(rawInput: string[]): utils.Solution {
 
 	while (gameState.blocks.size) {
 		const dir = Math.sign(gameState.ballX - gameState.paddleX);
-		input.push(dir);
+		codeState.input!.push(dir);
 		intcoder.run(program, undefined, codeState);
 		flushOutput(output, gameState);
 	}
