@@ -278,6 +278,25 @@ export function _euclideanDistance(coord1: number[], coord2: number[]): number {
 	return Math.sqrt(_squareEuclideanDistance(coord1, coord2));
 }
 
+/** Modular division */
+export function _modDiv(a: number, b: number, mod: number): number {
+	if (b === 0 || _gcd(b, mod) !== 1) { return NaN; } // b must be non-zero and co-prime with modulus
+	return _mod(a * _modInv(b, mod), mod);
+}
+
+/** Modular inverse */
+export function _modInv(n: number, mod: number): number {
+	let t = 0, tNext = 1, r = mod, rNext = n;
+	while (rNext !== 0) {
+		const quotient = Math.floor(r / rNext);
+		[t, tNext] = [tNext, t - quotient * tNext];
+		[r, rNext] = [rNext, r - quotient * rNext];
+	}
+	if (r > 1) { return NaN; } // Not invertible
+	if (t < 0) { t += mod; }
+	return t;
+}
+
 /**
  * Returns the square of the Euclidean distance between two n-dimensional coordinates
  * Safer and faster than true Euclidean distance when indexing and ranking large numbers of distances
