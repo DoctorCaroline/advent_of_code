@@ -247,7 +247,7 @@ export function _lcm(a: number, b: number): number {
 
 /** Simple Euclidean algorithm implementation that returns the greatest common denominator for a list of numbers */
 export function _gcd(a: number, b: number): number {
-	let temp;
+	let temp: number;
 	a = Math.abs(a);
 	b = Math.abs(b);
 	while (b !== 0) {
@@ -258,8 +258,26 @@ export function _gcd(a: number, b: number): number {
 	return a;
 };
 
+/** BigInteger implementation of the Euclidean algorithm for finding a GCD between two numbers */
+export function _biGcd(a: bigint, b: bigint): bigint {
+	let temp: bigint;
+	a < BigInt(0) && (a *= BigInt(-1));
+	b < BigInt(0) && (b *= BigInt(-1));
+	while (b !== BigInt(0)) {
+		temp = b;
+		b = a % b;
+		a = temp;
+	}
+	return a;
+}
+
 /** Given a divisor and dividend, returns the *positive* remainder of their division */
 export function _mod(divisor: number, dividend: number): number {
+	return (divisor % dividend + dividend) % dividend;
+}
+
+/** BigInteger version of the _mod function; ensures positive remainder */
+export function _biMod(divisor: bigint, dividend: bigint): bigint {
 	return (divisor % dividend + dividend) % dividend;
 }
 
@@ -284,6 +302,12 @@ export function _modDiv(a: number, b: number, mod: number): number {
 	return _mod(a * _modInv(b, mod), mod);
 }
 
+/** BigInteger version of _modDiv */
+export function _biModDiv(a: bigint, b: bigint, mod: bigint): bigint {
+	if (b === BigInt(0) || _biGcd(b, mod) !== BigInt(1)) { return BigInt(NaN); }
+	return _biMod(a * _biModInv(b, mod), mod);
+}
+
 /** Modular inverse */
 export function _modInv(n: number, mod: number): number {
 	let t = 0, tNext = 1, r = mod, rNext = n;
@@ -295,6 +319,39 @@ export function _modInv(n: number, mod: number): number {
 	if (r > 1) { return NaN; } // Not invertible
 	if (t < 0) { t += mod; }
 	return t;
+}
+
+/** BigInteger version of the modular inverse function */
+export function _biModInv(n: bigint, mod: bigint): bigint {
+	let t = BigInt(0), tNext = BigInt(1), r = mod, rNext = n;
+	while (rNext !== BigInt(0)) {
+		const quotient = r / rNext;
+		[t, tNext] = [tNext, t - quotient * tNext];
+		[r, rNext] = [rNext, r - quotient * rNext];
+	}
+	if (r > BigInt(1)) { return BigInt(NaN); } // Not invertible
+	if (t < 0) { t += mod; }
+	return t;
+}
+
+/** Modular exponentiation */
+export function _modExp(base: number, exp: number, mod: number): number {
+	if (exp === 0) { return 1; }
+	if (exp === 1) { return _mod(base, mod); }
+	const half = _modExp(base, Math.floor(exp / 2), mod);
+	let whole = _mod(half * half, mod);
+	if (_mod(exp, 2)) { whole = _mod(whole * base, mod); }
+	return whole;
+}
+
+/** BigInteger modular exponentiation */
+export function _biModExp(base: bigint, exp: bigint, mod: bigint): bigint {
+	if (exp === BigInt(0)) { return BigInt(1); }
+	if (exp === BigInt(1)) { return _biMod(base, mod); }
+	const half = _biModExp(base, exp / BigInt(2), mod);
+	let whole = _biMod(half * half, mod);
+	if (_biMod(exp, BigInt(2)) === BigInt(1)) { whole = _biMod(whole * base, mod); }
+	return whole;
 }
 
 /**
