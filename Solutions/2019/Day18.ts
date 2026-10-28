@@ -1,11 +1,14 @@
 import * as utils from "../../AdventOfCodeUtils";
 
+const __keyIndex: utils.StringKeyedObject<number[]> = {};
+const __nodeMap: utils.StringKeyedObject<utils.StringKeyedObject<INodeRoute[]>> = {};
+let __target: number = 0;
+
 /** Day 18 Solution */
 export function solution(rawInput: string[]): utils.Solution {
 
 	const map = rawInput.map(row => row.split(""));
 	
-	let target = 0;
 	const start: number[] = [];
 	for (let row = 0; row < map.length; row++) {
 		for (let col = 0; col < map[row].length; col++) {
@@ -14,21 +17,49 @@ export function solution(rawInput: string[]): utils.Solution {
 			if (char === "@") {
 				map[row][col] = ".";
 				start.push(row, col);
-				continue;
 			}
-			target = __addKey(target, char);
+			else {
+				__target = __addKey(__target, char);
+			}
+			if (char === char.toLowerCase()) {
+				__keyIndex[char] = [row, col];
+			}
 		}
 	}
 
-	const out = [];
-	out.push(__solutionInner(map, [start], target));
+	const out: utils.Solution = [__solutionInner(map, ["@"])];
+
+	const center = __keyIndex["@"];
+	map[center[0]][center[1]] = "#";
+	map[center[0] + 1][center[1]] = "#";
+	map[center[0] - 1][center[1]] = "#";
+	map[center[0]][center[1] + 1] = "#";
+	map[center[0]][center[1] - 1] = "#";
+	__keyIndex["@1"] = [center[0] - 1, center[1] - 1];
+	__keyIndex["@2"] = [center[0] - 1, center[1] + 1];
+	__keyIndex["@3"] = [center[0] + 1, center[1] - 1];
+	__keyIndex["@4"] = [center[0] + 1, center[1] + 1];
+	for (const key of ["@1", "@2", "@3", "@4"]) { map[__keyIndex[key][0]][__keyIndex[key][1]] = key; }
+
+	for (const start in __nodeMap) {
+		for (const end in __nodeMap[start]) {
+			const [startX, startY] = __keyIndex[start];
+			const [endX, endY] = __keyIndex[end];
+			if ((center[0] - startX) * (center[0] - endX) < 0 || (center[1] - startY) * (center[1] - endY) < 0) {
+				delete __nodeMap[start][end];
+				delete __nodeMap[end]?.[start];
+			}
+		}
+	}
+
+	out.push(__solutionInner(map, ["@1", "@2", "@3", "@4"]));
 	return out;
 }
 
-function __solutionInner(map: string[][], start: number[][], target: number): utils.Solution {
+function __solutionInner(map: string[][], startingPositions: string[]): number {
 
 	const initialState: IState = {
-		positions: start,
+		positions: startingPositions,
 		keys: 0,
 	};
 
@@ -46,30 +77,77 @@ function __solutionInner(map: string[][], start: number[][], target: number): ut
 		const state: string = queue[steps].pop()!;
 		const { positions, keys } = JSON.parse(state) as IState;
 
+		if (keys === __target) { return steps; }
+
 		for (let index = 0; index < positions.length; index++) {
 			const position = positions[index];
-			const nextSteps = [[0, -1], [-1, 0], [0, 1], [1, 0]].map(move => [position[0] + move[0], position[1] + move[1]]);
-			for (const nextStep of nextSteps) {
-				const nextChar = map[nextStep[0]][nextStep[1]];
-				if (!__canMoveTo(keys, nextChar)) { continue; }
-				let nextKeys = keys;
-				if (nextChar !== "." && nextChar === nextChar.toLowerCase()) {
-					nextKeys = __addKey(keys, nextChar);
-					if (nextKeys === target) { return [steps + 1]; }
-				}
-
-				const stateToQueue = JSON.stringify({
-					positions: [nextStep],
-					keys: nextKeys,
-				} as IState);
-
-				if (visited.has(stateToQueue)) { continue; }
-				visited.add(stateToQueue);
-				
-				(queue[steps + 1] ||= []).push(stateToQueue);
+			const destinations = __getNextAvailableNodes(map, position, keys);
+			for (const destination of destinations) {
+				const newKeys = __addKey(keys, destination.key);
+				const newSteps = steps + destination.route.steps;
+				const newPositions = [...positions];
+				newPositions[index] = destination.key;
+				const newState: IState = { positions: newPositions, keys: newKeys };
+				const newStateStr = JSON.stringify(newState);
+				if (visited.has(newStateStr)) { continue; }
+				visited.add(newStateStr);
+				(queue[newSteps] ||= []).push(JSON.stringify(newState));
 			}
 		}
 	}
+}
+
+function __getNextAvailableNodes(map: string[][], position: string, keys: number): IDestination[] {
+	if (!__nodeMap[position]) { __nodeMap[position] = __pathfind(map, position); }
+	const destinations: IDestination[] = [];
+	for (const destination in __nodeMap[position]) {
+		let bestRoute: INodeRoute | null = null;
+		for (const route of __nodeMap[position][destination]) {
+			if ((route.keysNeeded & keys) !== route.keysNeeded) { continue; }
+			if (!bestRoute || route.steps < bestRoute.steps) { bestRoute = route; }
+		}
+		if (bestRoute) { destinations.push({ key: destination, route: bestRoute }); }
+	}
+	return destinations;
+}
+
+function __pathfind(map: string[][], position: string): utils.StringKeyedObject<INodeRoute[]> {
+	const destinations: utils.StringKeyedObject<INodeRoute[]> = {};
+	const [x, y] = __keyIndex[position];
+	const initial: IPathfindState = { x, y, locks: 0, steps: 0 };
+	const initialStr = JSON.stringify(initial);
+
+	const queue: string[] = [initialStr];
+	const visited: Set<string> = new Set();
+	visited.add([x, y].join(","));
+
+	while (queue.length) {
+		const { x, y, locks, steps } = JSON.parse(queue.shift()!) as IPathfindState;
+		
+		const adjs = utils._getAdjacents([x, y]);
+		for (const adj of adjs) {
+			const adjStr = adj.join(",");
+			if (visited.has(adjStr)) { continue; }
+			const char = map[adj[0]][adj[1]];
+			if (char === "#") { continue; }
+			let newLocks = locks;
+			if (char !== char.toLowerCase()) {
+				newLocks = __addKey(newLocks, char);
+			}
+			if (char === "." || char !== char.toLowerCase()) {
+				const newState: IPathfindState = { x: adj[0], y: adj[1], locks: newLocks, steps: steps + 1 };
+				queue.push(JSON.stringify(newState));
+				visited.add(adjStr);
+				continue;
+			}
+			(destinations[char] ||= []).push({
+				keysNeeded: newLocks,
+				steps: steps + 1,
+			});
+		}
+	}
+
+	return destinations;
 }
 
 function __getKeyBit(char: string): number {
@@ -80,18 +158,24 @@ function __addKey(keyMask: number, char: string): number {
 	return keyMask | __getKeyBit(char);
 }
 
-function __containsKey(keyMask: number, char: string): boolean {
-	return (keyMask & __getKeyBit(char)) > 0;
+interface IDestination {
+	key: string;
+	route: INodeRoute;
 }
 
-function __canMoveTo(keyMask: number, char: string): boolean {
-	if (char === ".") { return true; }
-	if (char === "#") { return false; }
-	if (char === char.toLowerCase()) { return true; }
-	return __containsKey(keyMask, char);
+interface INodeRoute {
+	steps: number;
+	keysNeeded: number;
 }
 
 interface IState {
-	positions: number[][];
+	positions: string[];
 	keys: number;
+}
+
+interface IPathfindState{
+	x: number,
+	y: number,
+	locks: number,
+	steps: number,
 }
