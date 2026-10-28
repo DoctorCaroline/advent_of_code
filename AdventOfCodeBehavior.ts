@@ -42,9 +42,9 @@ export class AdventOfCodeBehavior {
 			process.exit();
 		}
 
-		const output = benchmark
+		const output = await (benchmark
 			? this.__benchmark({ input, solution, runtime: 10 })
-			: this.__runAndDisplay({ year, day, input, solution });
+			: this.__runAndDisplay({ year, day, input, solution }));
 
 		console.log(output.join("\n"));
 
@@ -107,11 +107,11 @@ export class AdventOfCodeBehavior {
 		return promise;
 	}
 
-	private __runAndDisplay(args: DisplaySolutionArgs): string[] {
+	private async __runAndDisplay(args: DisplaySolutionArgs): Promise<string[]> {
 		const { year, day, input, solution } = args;
 
 		const startTime = Date.now();
-		const answers = solution.solution(input);
+		const answers = await solution.solution(input);
 		const runtime = Date.now() - startTime;
 		
 		const divLine = "~~~~~~~~~~~~~~~~~~~~~~~";
@@ -137,14 +137,14 @@ export class AdventOfCodeBehavior {
 		];
 	}
 
-	private __benchmark(args: BenchmarkArgs): string[] {
+	private async __benchmark(args: BenchmarkArgs): Promise<string[]> {
 		const { input, solution, runtime } = args;
 		const runtimes: number[] = [];
 		let answers: utils.Solution = [];
 		let totalRuntime = 0;
 		while (totalRuntime < 1000 * runtime) {
 			const start = Date.now();
-			answers = solution.solution(input);
+			answers = await solution.solution(input);
 			const end = Date.now();
 			runtimes.push(end - start);
 			totalRuntime += (end - start);
@@ -168,7 +168,7 @@ export class AdventOfCodeBehavior {
 }
 
 interface Solution {
-	solution: (input: string[]) => utils.Solution;
+	solution: (input: string[]) => utils.Solution | Promise<utils.Solution>;
 }
 
 interface RunSolutionArgs {
